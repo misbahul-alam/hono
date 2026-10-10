@@ -227,7 +227,16 @@ export class HonoRequest<P extends string = '/', I extends Input['out'] = {}> {
         if (anyCachedKey === 'json') {
           body = JSON.stringify(body)
         }
-        return new Response(body)[key]()
+        // Rebuilding the body through a bare `Response` loses the request's media
+        // type, so a representation that needs it (e.g. `formData()`) can no longer
+        // be produced even though the bytes are still available. Carry the original
+        // `Content-Type` over, except for `FormData`, where `Response` must generate
+        // a fresh multipart boundary of its own.
+        const contentType =
+          anyCachedKey === 'formData' ? undefined : raw.headers.get('content-type')
+        return new Response(body, {
+          headers: contentType ? { 'Content-Type': contentType } : undefined,
+        })[key]()
       })
     }
 
@@ -350,7 +359,7 @@ export class HonoRequest<P extends string = '/', I extends Input['out'] = {}> {
   }
 
   /**
-   * `.url()` can get the request url strings.
+   * `.url` can get the request url strings.
    *
    * @see {@link https://hono.dev/docs/api/request#url}
    *
@@ -367,7 +376,7 @@ export class HonoRequest<P extends string = '/', I extends Input['out'] = {}> {
   }
 
   /**
-   * `.method()` can get the method name of the request.
+   * `.method` can get the method name of the request.
    *
    * @see {@link https://hono.dev/docs/api/request#method}
    *
@@ -387,7 +396,7 @@ export class HonoRequest<P extends string = '/', I extends Input['out'] = {}> {
   }
 
   /**
-   * `.matchedRoutes()` can return a matched route in the handler
+   * `.matchedRoutes` can return a matched route in the handler
    *
    * @deprecated
    *
@@ -418,7 +427,7 @@ export class HonoRequest<P extends string = '/', I extends Input['out'] = {}> {
   }
 
   /**
-   * `routePath()` can retrieve the path registered within the handler
+   * `.routePath` can retrieve the path registered within the handler
    *
    * @deprecated
    *
